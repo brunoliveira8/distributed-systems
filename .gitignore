@@ -81,6 +81,12 @@ celerybeat-schedule
 # virtualenv
 venv/
 ENV/
+bin/
+lib/
+include/
+pip-selfcheck.json
+share/
+
 
 # Spyder project settings
 .spyderproject
