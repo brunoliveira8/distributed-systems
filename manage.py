@@ -43,6 +43,22 @@ class PrimaryThread(threading.Thread):
                 daemon.requestLoop()
 
 
+class SecondaryThread(threading.Thread):
+    def run(self):
+        with Pyro4.Proxy("PYRONAME:storage.proxy") as proxy:
+            server = StorageServer.StorageSecundary(proxy)
+
+            with Pyro4.Daemon() as daemon:
+                daemons.append(daemon)
+
+                with Pyro4.locateNS() as ns:
+
+                    uri = daemon.register(server)
+                    ns.register(server.name, uri)
+
+                daemon.requestLoop()
+
+
 def main():
     running = True
     while running:
@@ -52,9 +68,9 @@ def main():
         Digite a opção desejada:
 
         1 - Inicializar (Cria Proxy e Primário)
-        4 - Criar Secundário
-        4 - Deletar Secundário
-        5 - Sair
+        2 - Criar Secundário
+        3 - Deletar Secundário
+        4 - Sair
         """
         print(commands)
 
@@ -80,12 +96,14 @@ def main():
             time.sleep(0.5)
 
         elif opt == 2:
-            pass
+            thread = SecondaryThread()
+            thread.start()
+            print("\tUma cópia secundária foi criada...")
+
         elif opt == 3:
             pass
+
         elif opt == 4:
-            pass
-        elif opt == 5:
             for daemon in daemons:
                 daemon.shutdown()
             running = False
