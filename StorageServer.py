@@ -29,7 +29,7 @@ class StorageSecundary(AbstractStorage):
 
     def __init__(self, proxy):
         self.proxy = proxy
-        self.pk = self.proxy.get_n_servers()
+        self.pk = self.proxy.n_servers
         self.db = "storage-secondary-{0}".format(self.pk)
         self.name = "storage.server.secundary.id-{0}".format(self.pk)
         self.proxy.register(self.name)
@@ -78,7 +78,11 @@ class StoragePrimary(AbstractStorage):
         for server_name in self.proxy.servers:
             if server_name != self.name:
                 with Pyro4.Proxy("PYRONAME:" + server_name) as storage:
-                    storage.save(file, filename)
+                    try:
+                        storage._pyroBind()
+                        storage.save(file, filename)
+                    except:
+                        print("Err: Objeto não encontrado...")
 
     def retrieve(self, filename):
         with open(os.path.join(self.db, filename), "r") as f:
@@ -94,8 +98,8 @@ class StoragePrimary(AbstractStorage):
 class StorageProxy(AbstractStorage):
 
     def __init__(self):
-        self.servers = list()
-        self.n_servers = 0
+        self._servers = list()
+        self._n_servers = 0
 
     @Pyro4.oneway
     def save(self, file, filename):
@@ -105,9 +109,17 @@ class StorageProxy(AbstractStorage):
 
     def retrieve(self, filename):
         """Colocar definição aqui."""
-        server_name = self.servers.pop()
-        self.servers.insert(0, server_name)
-        storage = Pyro4.Proxy("PYRONAME:" + server_name)
+        ctrl = True
+        while ctrl:
+            server_name = self._servers.pop()
+            self._servers.insert(0, server_name)
+            storage = Pyro4.Proxy("PYRONAME:" + server_name)
+            try:
+                storage._pyroBind()
+                ctrl = False
+            except:
+                pass
+
         response = storage.retrieve(filename)
         print("Lendo do server: " + server_name)
 
@@ -115,17 +127,29 @@ class StorageProxy(AbstractStorage):
 
     def list(self):
         """Colocar definição aqui."""
-        server_name = self.servers.pop()
-        self.servers.insert(0, server_name)
-        storage = Pyro4.Proxy("PYRONAME:" + server_name)
-        response = storage.list()
+        ctrl = True
+        while ctrl:
+            server_name = self._servers.pop()
+            self._servers.insert(0, server_name)
+            storage = Pyro4.Proxy("PYRONAME:" + server_name)
+            try:
+                response = storage.list()
+                ctrl = False
+            except:
+                pass
+
         print("Lendo do server: " + server_name)
 
         return response
 
     def register(self, server_name):
-        self.servers.append(server_name)
-        self.n_servers += 1
+        self._servers.append(server_name)
+        self._n_servers += 1
 
-    def get_n_servers(self):
-        return self.n_servers
+    @property
+    def servers(self):
+        return self._servers
+
+    @property
+    def n_servers(self):
+        return self._n_servers

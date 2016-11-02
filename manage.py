@@ -3,7 +3,9 @@ import time
 import StorageServer
 import Pyro4
 
-daemons = []
+daemons = list()
+daemons_secondary = dict()
+secondary_servers = dict()
 
 
 class NSThread(threading.Thread):
@@ -47,16 +49,34 @@ class SecondaryThread(threading.Thread):
     def run(self):
         with Pyro4.Proxy("PYRONAME:storage.proxy") as proxy:
             server = StorageServer.StorageSecundary(proxy)
+            secondary_servers[server.name] = server
 
             with Pyro4.Daemon() as daemon:
-                daemons.append(daemon)
 
                 with Pyro4.locateNS() as ns:
 
                     uri = daemon.register(server)
                     ns.register(server.name, uri)
 
+                    daemons_secondary[server.name] = daemon
+
                 daemon.requestLoop()
+
+
+def desregistrar_servidor(server_id):
+    server_name = "storage.server.secundary.id-{0}".format(server_id)
+    daemon = daemons_secondary[server_name]
+    server = secondary_servers[server_name]
+    daemon.unregister(server)
+
+
+def registrar_servidor(server_id):
+    server_name = "storage.server.secundary.id-{0}".format(server_id)
+    daemon = daemons_secondary[server_name]
+    server = secondary_servers[server_name]
+    uri = daemon.register(server)
+    with Pyro4.locateNS() as ns:
+        ns.register(server_name, uri)
 
 
 def main():
@@ -69,8 +89,9 @@ def main():
 
         1 - Inicializar (Cria Proxy e Primário)
         2 - Criar Secundário
-        3 - Deletar Secundário
-        4 - Sair
+        3 - Desregistrar Secundário
+        4 - Registrar Secundário
+        5 - Sair
         """
         print(commands)
 
@@ -101,11 +122,20 @@ def main():
             print("\tUma cópia secundária foi criada...")
 
         elif opt == 3:
-            pass
+            server_id = input("\tDigite o id do servidor: ")
+            desregistrar_servidor(server_id)
 
         elif opt == 4:
+            server_id = input("\tDigite o id do servidor: ")
+            registrar_servidor(server_id)
+
+        elif opt == 5:
             for daemon in daemons:
                 daemon.shutdown()
+
+            for daemon in daemons_secondary.values():
+                daemon.shutdown()
+
             running = False
         else:
             print("\tDigite uma opção válida")
