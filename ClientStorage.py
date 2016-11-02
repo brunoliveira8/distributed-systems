@@ -6,7 +6,8 @@ import Pyro4
 def main():
 
     storage = Pyro4.Proxy("PYRONAME:storage.proxy")
-    print(storage.list())
+    # storage.save("hi, friend", "hello2.txt")
+    print(storage.retrieve("hello2.txt"))
 
 
 if __name__ == '__main__':
