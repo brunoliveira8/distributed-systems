@@ -45,13 +45,42 @@ class StorageSecundary(AbstractStorage):
             f.write(file)
 
     def retrieve(self, filename):
-        with open(os.path.join(self.db, filename), "r") as f:
-            response = f.read()
-            return response
+        response = {'code': '404', 'content': 'Not found.'}
+        try:
+            with open(os.path.join(self.db, filename), "r") as f:
+                response['code'] = '200'
+                response['content'] = f.read()
+        except:
+            self._sync()
+
+        return response
 
     def list(self):
-        response = os.listdir(self.db)
+        response = {'code': '404', 'content': 'Not found.'}
+
+        response['code'] = '200'
+        response['content'] = os.listdir(self.db)
+        
         return response
+
+    def _sync(self):
+        with Pyro4.Proxy("PYRONAME:storage.server.primary") as primary:
+            print('Log: Sincronizando servidor ', self.name)
+
+            primary_files = set(primary.list()['content'])
+            print('Log: Arquivos do primário', primary_files)
+
+            my_files = set(self.list()['content'])
+            print('Log: Arquivos do secundário', my_files)
+
+            sync_files = primary_files - my_files
+            print('Log: Arquivos para sincronizar', sync_files)
+
+            for filename in sync_files:
+                response = primary.retrieve(filename)
+                print('Log: Arquivos para sincronizar', response)
+                self.save(response['content'], filename)
+
 
 
 @Pyro4.expose
@@ -85,12 +114,23 @@ class StoragePrimary(AbstractStorage):
                         print("Err: Objeto não encontrado...")
 
     def retrieve(self, filename):
-        with open(os.path.join(self.db, filename), "r") as f:
-            response = f.read()
-            return response
+        response = {'code': '404', 'content': 'Not found.'}
+
+        try:
+            with open(os.path.join(self.db, filename), "r") as f:
+                response['code'] = '200'
+                response['content'] = f.read()
+        except:
+            pass
+        
+        return response
 
     def list(self):
-        response = os.listdir(self.db)
+        response = {'code': '404', 'content': 'Not found.'}
+
+        response['code'] = '200'
+        response['content'] = os.listdir(self.db)
+        
         return response
 
 
@@ -116,29 +156,24 @@ class StorageProxy(AbstractStorage):
             storage = Pyro4.Proxy("PYRONAME:" + server_name)
             try:
                 storage._pyroBind()
+                print("Lendo do server: " + server_name)
                 ctrl = False
             except:
                 pass
 
         response = storage.retrieve(filename)
-        print("Lendo do server: " + server_name)
+
+        if response['code'] == '404' and server_name != 'storage.server.primary':
+            with Pyro4.Proxy("PYRONAME:storage.server.primary") as primary:
+                response = primary.retrieve(filename)
+                print('Server {0} falhou. Recebendo resposta do primário...'.format(server_name))
 
         return response
 
     def list(self):
         """Colocar definição aqui."""
-        ctrl = True
-        while ctrl:
-            server_name = self._servers.pop()
-            self._servers.insert(0, server_name)
-            storage = Pyro4.Proxy("PYRONAME:" + server_name)
-            try:
-                response = storage.list()
-                ctrl = False
-            except:
-                pass
-
-        print("Lendo do server: " + server_name)
+        with Pyro4.Proxy("PYRONAME:storage.server.primary") as primary:
+                    response = primary.list()
 
         return response
 
