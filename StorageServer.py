@@ -60,7 +60,7 @@ class StorageSecundary(AbstractStorage):
 
         response['code'] = '200'
         response['content'] = os.listdir(self.db)
-        
+
         return response
 
     def _sync(self):
@@ -80,7 +80,6 @@ class StorageSecundary(AbstractStorage):
                 response = primary.retrieve(filename)
                 print('Log: Arquivos para sincronizar', response)
                 self.save(response['content'], filename)
-
 
 
 @Pyro4.expose
@@ -122,7 +121,7 @@ class StoragePrimary(AbstractStorage):
                 response['content'] = f.read()
         except:
             pass
-        
+
         return response
 
     def list(self):
@@ -130,7 +129,7 @@ class StoragePrimary(AbstractStorage):
 
         response['code'] = '200'
         response['content'] = os.listdir(self.db)
-        
+
         return response
 
 
@@ -166,14 +165,15 @@ class StorageProxy(AbstractStorage):
         if response['code'] == '404' and server_name != 'storage.server.primary':
             with Pyro4.Proxy("PYRONAME:storage.server.primary") as primary:
                 response = primary.retrieve(filename)
-                print('Server {0} falhou. Recebendo resposta do primário...'.format(server_name))
+                print('Server {0} falhou. Recebendo resposta do primário...'.format(
+                    server_name))
 
         return response
 
     def list(self):
         """Colocar definição aqui."""
         with Pyro4.Proxy("PYRONAME:storage.server.primary") as primary:
-                    response = primary.list()
+            response = primary.list()
 
         return response
 
