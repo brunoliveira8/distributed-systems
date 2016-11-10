@@ -14,6 +14,11 @@ class AbstractStorage(object):
         return
 
     @abstractmethod
+    def delete(self):
+        """Colocar definição aqui."""
+        return
+
+    @abstractmethod
     def retrieve(self, filename):
         """Colocar definição aqui."""
         return
@@ -39,10 +44,24 @@ class StorageSecundary(AbstractStorage):
         except:
             pass
 
+        self._sync()
+
     @Pyro4.oneway
     def save(self, file, filename):
         with open(os.path.join(self.db, filename), "w") as f:
             f.write(file)
+
+    def delete(self, filename):
+        response = {'code': '404', 'content': 'Not found.'}
+
+        try:
+            os.remove(os.path.join(self.db, filename))
+            response['code'] = '200'
+            response['content'] = 'Arquivo deletado.'
+        except:
+            pass
+
+        return response
 
     def retrieve(self, filename):
         response = {'code': '404', 'content': 'Not found.'}
@@ -65,20 +84,15 @@ class StorageSecundary(AbstractStorage):
 
     def _sync(self):
         with Pyro4.Proxy("PYRONAME:storage.server.primary") as primary:
-            print('Log: Sincronizando servidor ', self.name)
 
             primary_files = set(primary.list()['content'])
-            print('Log: Arquivos do primário', primary_files)
 
             my_files = set(self.list()['content'])
-            print('Log: Arquivos do secundário', my_files)
 
             sync_files = primary_files - my_files
-            print('Log: Arquivos para sincronizar', sync_files)
 
             for filename in sync_files:
                 response = primary.retrieve(filename)
-                print('Log: Arquivos para sincronizar', response)
                 self.save(response['content'], filename)
 
 
@@ -111,6 +125,27 @@ class StoragePrimary(AbstractStorage):
                         storage.save(file, filename)
                     except:
                         print("Err: Objeto não encontrado...")
+
+    def delete(self, filename):
+        response = {'code': '404', 'content': 'Not found.'}
+
+        try:
+            os.remove(os.path.join(self.db, filename))
+            response['code'] = '200'
+            response['content'] = 'Arquivo deletado.'
+        except:
+            pass
+
+        for server_name in self.proxy.servers:
+            if server_name != self.name:
+                with Pyro4.Proxy("PYRONAME:" + server_name) as storage:
+                    try:
+                        storage._pyroBind()
+                        storage.delete(filename)
+                    except:
+                        print("Err: Objeto não encontrado...")
+
+        return response
 
     def retrieve(self, filename):
         response = {'code': '404', 'content': 'Not found.'}
@@ -145,6 +180,15 @@ class StorageProxy(AbstractStorage):
         """Colocar definição aqui."""
         with Pyro4.Proxy("PYRONAME:storage.server.primary") as primary:
             primary.save(file, filename)
+
+    def delete(self, filename):
+        """Colocar definição aqui."""
+        response = {'code': '404', 'content': 'Not found.'}
+
+        with Pyro4.Proxy("PYRONAME:storage.server.primary") as primary:
+            response = primary.delete(filename)
+
+        return response
 
     def retrieve(self, filename):
         """Colocar definição aqui."""
