@@ -2,6 +2,7 @@
 import os
 from abc import ABCMeta, abstractmethod
 import Pyro4
+import serpent
 
 
 class AbstractStorage(object):
@@ -48,8 +49,8 @@ class StorageSecundary(AbstractStorage):
 
     @Pyro4.oneway
     def save(self, file, filename):
-        with open(os.path.join(self.db, filename), "w") as f:
-            f.write(file)
+        with open(os.path.join(self.db, filename), "wb") as f:
+            f.write(serpent.tobytes(file))
 
     def delete(self, filename):
         response = {'code': '404', 'content': 'Not found.'}
@@ -66,7 +67,7 @@ class StorageSecundary(AbstractStorage):
     def retrieve(self, filename):
         response = {'code': '404', 'content': 'Not found.'}
         try:
-            with open(os.path.join(self.db, filename), "r") as f:
+            with open(os.path.join(self.db, filename), "rb") as f:
                 response['code'] = '200'
                 response['content'] = f.read()
         except:
@@ -93,7 +94,7 @@ class StorageSecundary(AbstractStorage):
 
             for filename in sync_files:
                 response = primary.retrieve(filename)
-                self.save(response['content'], filename)
+                self.save(serpent.tobytes(response['content']), filename)
 
             delete_files = my_files - primary_files
 
@@ -118,15 +119,16 @@ class StoragePrimary(AbstractStorage):
 
     @Pyro4.oneway
     def save(self, file, filename):
-        with open(os.path.join(self.db, filename), "w") as f:
-            f.write(file)
+
+        with open(os.path.join(self.db, filename), "wb") as f:
+            f.write(serpent.tobytes(file))
 
         for server_name in self.proxy.servers:
             if server_name != self.name:
                 with Pyro4.Proxy("PYRONAME:" + server_name) as storage:
                     try:
                         storage._pyroBind()
-                        storage.save(file, filename)
+                        storage.save(serpent.tobytes(file), filename)
                     except:
                         print("Err: Objeto não encontrado...")
 
@@ -155,7 +157,7 @@ class StoragePrimary(AbstractStorage):
         response = {'code': '404', 'content': 'Not found.'}
 
         try:
-            with open(os.path.join(self.db, filename), "r") as f:
+            with open(os.path.join(self.db, filename), "rb") as f:
                 response['code'] = '200'
                 response['content'] = f.read()
         except:

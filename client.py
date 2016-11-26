@@ -26,7 +26,7 @@ def main():
         if opt == 1:
             filename = input("\n\tDigite o nome do arquivo: ")
             file = input("\tDigite o conteudo do arquivo: ")
-            storage.save(file, filename)
+            storage.save(bytes(file, 'utf8'), filename)
             print("\tArquivo salvo. ")
 
         elif opt == 2:
@@ -38,15 +38,21 @@ def main():
             print("\tResposta: {}".format(storage.retrieve(filename)))
 
         elif opt == 4:
-            print("\tResposta: {}".format(storage.list()))
+            arquivos = storage.list()['content']
+
+            print('\n\tArquivos: ')
+
+            for arquivo in arquivos:
+                print('\t\t{}'.format(arquivo))
 
         elif opt == 5:
             running = False
 
         elif opt == 6:
-            with open('hello.pdf', 'r') as f:
+            with open('hello.pdf', 'rb') as f:
                 data = f.read()
-                storage.save(data, 'hello.pdf')
+                storage.save(data, 'hello1.pdf')
+
 
         else:
             print("\tDigite uma opção válida")
