@@ -95,6 +95,10 @@ class StorageSecundary(AbstractStorage):
                 response = primary.retrieve(filename)
                 self.save(response['content'], filename)
 
+            delete_files = my_files - primary_files
+
+            for filename in delete_files:
+                os.remove(os.path.join(self.db, filename))
 
 @Pyro4.expose
 class StoragePrimary(AbstractStorage):
@@ -204,15 +208,20 @@ class StorageProxy(AbstractStorage):
             except:
                 pass
 
-        response = storage.retrieve(filename)
+        if filename in self.list()['content']:
+            response = storage.retrieve(filename)
 
-        if response['code'] == '404' and server_name != 'storage.server.primary':
-            with Pyro4.Proxy("PYRONAME:storage.server.primary") as primary:
-                response = primary.retrieve(filename)
-                print('Server {0} falhou. Recebendo resposta do primário...'.format(
-                    server_name))
+            if response['code'] == '404' and server_name != 'storage.server.primary':
+                with Pyro4.Proxy("PYRONAME:storage.server.primary") as primary:
+                    response = primary.retrieve(filename)
+                    print('Server {0} falhou. Recebendo resposta do primário...'.format(
+                        server_name))
 
-        return response
+            return response
+
+        else:
+            response = {'code': '404', 'content': 'Not found.'}
+            return response
 
     def list(self):
         """Colocar definição aqui."""
