@@ -5,7 +5,7 @@ O trabalho foi realizado utilizando a linguagem de programação [Python 3.5](ht
 
 ## Biblioteca Pyro4
 
-Esta biblioteca implementa o mecanismo **RMI** (Remote Method Invocation). Com isso, o sistema foi construído utilizando orientação a objeto e possui **quatros classes**: AbstractStorage, StorageProxy, StoragePrimary e StorageSecundary.
+Esta biblioteca implementa o mecanismo **RMI** (Remote Method Invocation). Com isso, o sistema foi construído utilizando orientação a objeto e possui quatros classes: AbstractStorage, StorageProxy, StoragePrimary e StorageSecundary.
 
 ## Instalação
 
@@ -23,7 +23,7 @@ Toda a parte de gerência do sistema é feito através do script **manage.py**. 
 
 ## Como utilizar o cliente?
 
-Através do script **client.py** você pode:
+Através da CLI fornecida pelo script **client.py** você pode:
 
 1. Criar e enviar arquivo no formato txt.
 2. Enviar arquivo no formato PDF.
