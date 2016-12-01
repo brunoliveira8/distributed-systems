@@ -15,4 +15,17 @@ Para rodar o sistema você precisa ter instalado:
 
 ## Como criar os servidores?
 
-Toda a parte de gerência do programa  feito através 
+Toda a parte de gerência do sistema é feito através do script **manage.py**. Esse script fornece uma CLI onde você pode:
+1. Inicializar o serviço. (Cria o proxy, a máquina primária e o servidor de DNS)
+2. Adicionar uma cópia secundária.
+3. Simular a falha e a recuperação de uma cópia.
+
+## Como utilizar o cliente?
+
+Através do script **client.py** você pode:
+1. Criar e enviar arquivo no formato txt.
+2. Enviar arquivo no formato PDF.
+3. Deletar arquivos.
+4. Ler arquivos.
+5. Listar os arquivos.
+
