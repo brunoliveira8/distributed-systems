@@ -13,3 +13,6 @@ Para rodar o sistema você precisa ter instalado:
 * [Python 3.5](https://www.python.org/downloads/) (já vem instalado em sistemas Ubuntu e OSX)
 * [Pyro 4](https://pythonhosted.org/Pyro4/install.html#obtaining-and-installing-pyro) (pode ser instalador usando o pip, gerenciador de pacotes do Python)
 
+## Como criar os servidores?
+
+Toda a parte de gerência do programa  feito através 
